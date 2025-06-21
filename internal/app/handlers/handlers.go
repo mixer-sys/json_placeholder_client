@@ -8,8 +8,9 @@ import (
 	"os"
 	"strconv"
 
+	logger "json_placeholder_client/internal/app/logger"
+
 	"github.com/joho/godotenv"
-	logger "github.com/mixer-sys/json_placeholder_client/internal/app/logger"
 )
 
 type Post struct {

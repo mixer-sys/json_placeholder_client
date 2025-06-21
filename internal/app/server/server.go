@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
+	"json_placeholder_client/internal/app/logger"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {

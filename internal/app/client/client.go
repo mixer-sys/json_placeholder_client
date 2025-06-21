@@ -6,9 +6,10 @@ import (
 	"net/url"
 	"os"
 
+	handlers "json_placeholder_client/internal/app/handlers"
+	"json_placeholder_client/internal/app/logger"
+
 	"github.com/joho/godotenv"
-	handlers "github.com/mixer-sys/json_placeholder_client/internal/app/handlers"
-	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
 )
 
 func GetProxyURL() (*url.URL, error) {

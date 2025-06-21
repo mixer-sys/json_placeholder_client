@@ -5,9 +5,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/mixer-sys/json_placeholder_client/internal/app/client"
-	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
-	"github.com/mixer-sys/json_placeholder_client/internal/app/server"
+	"json_placeholder_client/internal/app/client"
+	"json_placeholder_client/internal/app/logger"
+
+	"json_placeholder_client/internal/app/server"
 )
 
 func main() {

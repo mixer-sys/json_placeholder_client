@@ -1,5 +1,5 @@
-module github.com/mixer-sys/json_placeholder_client
+module json_placeholder_client
 
-go 1.24.3
+go 1.24.4
 
 require github.com/joho/godotenv v1.5.1
