@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	logger "github.com/mixer-sys/json_placeholder_client/internal/app/logger"
@@ -58,7 +59,7 @@ func GetPosts(client *http.Client) []Post {
 func GetPostByID(client *http.Client, id int) Post {
 	baseURL := GetUrl()
 
-	resp, err := client.Get(baseURL + "/posts/" + string(id))
+	resp, err := client.Get(baseURL + "/posts/" + strconv.Itoa(id))
 	if err != nil {
 		panic(err)
 	}
@@ -112,7 +113,7 @@ func UpdatePost(client *http.Client, id int, post Post) Post {
 		panic(err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, baseURL+"/posts/"+string(id), io.NopCloser(bytes.NewBuffer(postData)))
+	req, err := http.NewRequest(http.MethodPut, baseURL+"/posts/"+strconv.Itoa(id), io.NopCloser(bytes.NewBuffer(postData)))
 	if err != nil {
 		panic(err)
 	}
@@ -137,10 +138,10 @@ func UpdatePost(client *http.Client, id int, post Post) Post {
 	return updatedPost
 }
 
-func DeletePost(client *http.Client, id int) {
+func DeletePost(client *http.Client, id int) error {
 	baseURL := GetUrl()
 
-	req, err := http.NewRequest(http.MethodDelete, baseURL+"/posts/"+string(id), nil)
+	req, err := http.NewRequest(http.MethodDelete, baseURL+"/posts/"+strconv.Itoa(id), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -153,6 +154,7 @@ func DeletePost(client *http.Client, id int) {
 
 	if resp.StatusCode != http.StatusNoContent {
 		log := logger.GetLogger()
-		log.Error.Printf("Failed to delete post with ID %d: %s\n", id, resp.Status)
+		log.Info.Printf("Failed to delete post with ID %d: %s\n", id, resp.Status)
 	}
+	return nil
 }

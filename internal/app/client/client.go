@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/mixer-sys/json_placeholder_client/internal/app/handlers"
+	handlers "github.com/mixer-sys/json_placeholder_client/internal/app/handlers"
 	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
 )
 
@@ -61,14 +61,18 @@ func RunTestClient() {
 	}
 
 	posts := handlers.GetPosts(client)
-	for _, post := range posts {
-		log.Info.Printf("Post ID: %d, Title: %s", post.ID, post.Title)
-	}
-	postID := 1 // Example post ID
+	log.Info.Println("Retrieved posts successfully. Total posts:", len(posts))
+
+	postID := 1
 	post := handlers.GetPostByID(client, postID)
-	log.Info.Printf("Post ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
-	log.Info.Println("Test client run completed successfully.")
+	log.Info.Printf("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 
+	created_post := handlers.CreatePost(client, post)
+	log.Info.Printf("Created Post ID: %d, Title: %s, Body: %s", created_post.ID, created_post.Title, created_post.Body)
+
+	updated_post := handlers.UpdatePost(client, postID, post)
+	log.Info.Printf("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
+
+	handlers.DeletePost(client, postID)
+	log.Info.Println("Test client operations completed successfully.")
 }
-
-//

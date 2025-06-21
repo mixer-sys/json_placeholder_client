@@ -37,5 +37,8 @@ func Server() {
 	log := logger.GetLogger()
 	http.HandleFunc("/", handler)
 	log.Info.Println("Server is running on port 8080...")
-	log.Info.Println(http.ListenAndServe(":8080", nil))
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Error.Printf("Server failed to start: %v", err)
+	}
 }
