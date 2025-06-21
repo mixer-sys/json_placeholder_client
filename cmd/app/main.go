@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/mixer-sys/json_placeholder_client/internal/app/client"
+	"github.com/mixer-sys/json_placeholder_client/internal/app/handlers"
 	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
 	"github.com/mixer-sys/json_placeholder_client/internal/app/server"
 )

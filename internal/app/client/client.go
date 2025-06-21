@@ -25,28 +25,19 @@ func GetProxyURL() (*url.URL, error) {
 	return proxyURL, nil
 }
 
-func client() {
+func GetClient() (*http.Client, error) {
 	log := logger.GetLogger()
 
 	proxyURL, err := GetProxyURL()
 	if err != nil {
 		log.Error.Println("Error getting proxy URL:", err)
+		return nil, err
 	}
-
-	baseURL := os.Getenv("BASE_URL")
 
 	transport := &http.Transport{
 		Proxy: http.ProxyURL(proxyURL),
 	}
 
 	client := &http.Client{Transport: transport}
-
-	resp, err := client.Get(baseURL)
-	if err != nil {
-		log.Error.Println("Error making GET request:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	log.Info.Printf("Response status: %s", resp.Status)
+	return client, nil
 }
