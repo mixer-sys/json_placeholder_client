@@ -1,61 +1,52 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"os"
 
-	"github.com/joho/godotenv"
-	logger "github.com/mixer-sys/json_placeholder_client/internal/app/logger"
+	"github.com/mixer-sys/json_placeholder_client/internal/app/logger"
 )
 
-type Post struct {
-	UserID int    `json:"userId"`
-	ID     int    `json:"id,omitempty"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
+func GetProxyURL() (*url.URL, error) {
+	log := logger.GetLogger()
+	proxyStr := os.Getenv("PROXY_URL")
+	if proxyStr == "" {
+		log.Error.Println("PROXY_URL is not set in environment variables")
+		return nil, fmt.Errorf("PROXY_URL is not set")
+	}
+
+	proxyURL, err := url.Parse(proxyStr)
+	if err != nil {
+		log.Error.Printf("Invalid PROXY_URL: %s, error: %v", proxyStr, err)
+		return nil, err
+	}
+	return proxyURL, nil
 }
 
-func GetUrl() string {
+func client() {
 	log := logger.GetLogger()
-	err := godotenv.Load()
+
+	proxyURL, err := GetProxyURL()
 	if err != nil {
-		log.Println("Warning: .env file not found or couldn't be loaded")
+		log.Error.Println("Error getting proxy URL:", err)
 	}
 
 	baseURL := os.Getenv("BASE_URL")
-	if baseURL == "" {
-		log.Fatal("BASE_URL is not set in environment variables")
+
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
 	}
 
-	return baseURL
-}
+	client := &http.Client{Transport: transport}
 
-func GetPosts() []Post {
-	log := logger.GetLogger()
-	baseURL := GetUrl()
-
-	resp, err := http.Get(baseURL + "/posts")
+	resp, err := client.Get(baseURL)
 	if err != nil {
-		panic(err)
+		log.Error.Println("Error making GET request:", err)
+		return
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var posts []Post
-	if err := json.Unmarshal(body, &posts); err != nil {
-		panic(err)
-	}
-	log.Infof("Was %d gotten\n", len(posts))
-
-	for _, post := range posts {
-		fmt.Printf("Post ID: %d, Title: %s\n", post.ID, post.Title)
-	}
-	return posts
+	log.Info.Printf("Response status: %s", resp.Status)
 }

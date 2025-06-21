@@ -1,4 +1,5 @@
-module json_placeholder_client
+module github.com/mixer-sys/json_placeholder_client
+
 
 go 1.24.3
 
