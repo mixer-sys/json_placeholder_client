@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/signal"
-	"time"
 
 	"json_placeholder_client/internal/app/client"
 	"json_placeholder_client/internal/app/logger"
@@ -18,11 +17,13 @@ func main() {
 
 	log := logger.GetLogger()
 	go server.Server()
-	time.Sleep(2 * time.Second)
 	log.Info.Println("Server is running. Press Ctrl+C to stop.")
 	log.Info.Println("Starting JSON Placeholder Client...")
 
-	client.RunTestClient()
+	err := client.RunTestClient()
+	if err != nil {
+		log.Error.Println(err)
+	}
 
 	<-sigChan
 	log.Info.Println("Received interrupt signal, shutting down...")

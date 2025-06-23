@@ -1,10 +1,14 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"json_placeholder_client/internal/app/logger"
+
+	"github.com/joho/godotenv"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -33,11 +37,28 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
+func GetPort() (string, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return "", err
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		return "", fmt.Errorf("PORT is not set")
+	}
+
+	return port, nil
+}
 func Server() {
 	log := logger.GetLogger()
 	http.HandleFunc("/", handler)
 	log.Info.Println("Server is running on port 8080...")
-	err := http.ListenAndServe(":8080", nil)
+	port, err := GetPort()
+	if err != nil {
+		log.Error.Printf("Error get port: %v", err)
+	}
+	address := ":" + port
+	err = http.ListenAndServe(address, nil)
 	if err != nil {
 		log.Error.Printf("Server failed to start: %v", err)
 	}

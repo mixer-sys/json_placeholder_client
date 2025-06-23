@@ -13,31 +13,25 @@ import (
 )
 
 func GetProxyURL() (*url.URL, error) {
-	log := logger.GetLogger()
 	err := godotenv.Load()
 	if err != nil {
-		log.Info.Println("Error loading .env file")
+		return nil, err
 	}
 	proxyStr := os.Getenv("PROXY_URL")
 	if proxyStr == "" {
-		log.Error.Println("PROXY_URL is not set in environment variables")
 		return nil, fmt.Errorf("PROXY_URL is not set")
 	}
 
 	proxyURL, err := url.Parse(proxyStr)
 	if err != nil {
-		log.Error.Printf("Invalid PROXY_URL: %s, error: %v", proxyStr, err)
 		return nil, err
 	}
 	return proxyURL, nil
 }
 
 func GetClient() (*http.Client, error) {
-	log := logger.GetLogger()
-
 	proxyURL, err := GetProxyURL()
 	if err != nil {
-		log.Error.Println("Error getting proxy URL:", err)
 		return nil, err
 	}
 
@@ -52,28 +46,45 @@ func GetClient() (*http.Client, error) {
 	return client, nil
 }
 
-func RunTestClient() {
+func RunTestClient() error {
 	log := logger.GetLogger()
 
 	client, err := GetClient()
 	if err != nil {
-		log.Error.Println("Error creating HTTP client:", err)
-		return
+		return fmt.Errorf("Error creating HTTP client:", err)
+
 	}
 
-	posts := handlers.GetPosts(client)
-	log.Info.Println("Retrieved posts successfully. Total posts:", len(posts))
+	posts, err := handlers.GetPosts(client)
+	if err != nil {
+		return fmt.Errorf("Error GetPosts: ", err)
+	} else {
+		log.Info.Println("Retrieved posts successfully. Total posts:", len(posts))
+	}
 
 	postID := 1
-	post := handlers.GetPostByID(client, postID)
-	log.Info.Printf("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
+	post, err := handlers.GetPostByID(client, postID)
+	if err != nil {
+		return fmt.Errorf("Error GetPostByID: ", err)
+	} else {
+		log.Info.Printf("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
+	}
 
-	created_post := handlers.CreatePost(client, post)
-	log.Info.Printf("Created Post ID: %d, Title: %s, Body: %s", created_post.ID, created_post.Title, created_post.Body)
+	created_post, err := handlers.CreatePost(client, post)
+	if err != nil {
+		return fmt.Errorf("Error CreatePost: ", err)
+	} else {
+		log.Info.Printf("Created Post ID: %d, Title: %s, Body: %s", created_post.ID, created_post.Title, created_post.Body)
+	}
 
-	updated_post := handlers.UpdatePost(client, postID, post)
-	log.Info.Printf("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
+	updated_post, err := handlers.UpdatePost(client, postID, post)
+	if err != nil {
+		return fmt.Errorf("Error UpdatePost: ", err)
+	} else {
+		log.Info.Printf("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
+	}
 
 	handlers.DeletePost(client, postID)
 	log.Info.Println("Test client operations completed successfully.")
+	return nil
 }
