@@ -51,13 +51,13 @@ func RunTestClient() error {
 
 	client, err := GetClient()
 	if err != nil {
-		return fmt.Errorf("Error creating HTTP client:", err)
+		return fmt.Errorf("error creating HTTP client: %v", err)
 
 	}
 
 	posts, err := handlers.GetPosts(client)
 	if err != nil {
-		return fmt.Errorf("Error GetPosts: ", err)
+		return fmt.Errorf("error GetPosts: %v", err)
 	} else {
 		log.Info.Println("Retrieved posts successfully. Total posts:", len(posts))
 	}
@@ -65,21 +65,21 @@ func RunTestClient() error {
 	postID := 1
 	post, err := handlers.GetPostByID(client, postID)
 	if err != nil {
-		return fmt.Errorf("Error GetPostByID: ", err)
+		return fmt.Errorf("error GetPostByID: %v", err)
 	} else {
 		log.Info.Printf("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 	}
 
 	created_post, err := handlers.CreatePost(client, post)
 	if err != nil {
-		return fmt.Errorf("Error CreatePost: ", err)
+		return fmt.Errorf("error CreatePost: %v", err)
 	} else {
 		log.Info.Printf("Created Post ID: %d, Title: %s, Body: %s", created_post.ID, created_post.Title, created_post.Body)
 	}
 
 	updated_post, err := handlers.UpdatePost(client, postID, post)
 	if err != nil {
-		return fmt.Errorf("Error UpdatePost: ", err)
+		return fmt.Errorf("error UpdatePost: %v", err)
 	} else {
 		log.Info.Printf("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
 	}
