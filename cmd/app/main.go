@@ -18,7 +18,13 @@ func main() {
 	log := logger.GetLogger()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go server.Run(&ctx)
+	go func() {
+		err := server.Run(&ctx)
+		if err != nil {
+			log.Error("Error starting server: %v", err)
+			os.Exit(1)
+		}
+	}()
 	log.Info("Server is running. Press Ctrl+C to stop.")
 	log.Info("Starting JSON Placeholder Client...")
 
