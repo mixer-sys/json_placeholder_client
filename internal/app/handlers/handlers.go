@@ -1,16 +1,14 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strconv"
 
 	logger "json_placeholder_client/internal/app/logger"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -37,50 +35,47 @@ func GetUrl() string {
 	return baseURL
 }
 
-func GetPosts(client *http.Client) ([]Post, error) {
+func GetPosts(client *resty.Client) (posts []Post, err error) {
 	baseURL := GetUrl()
 
-	resp, err := client.Get(baseURL + "/posts")
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
-	}
-	defer resp.Body.Close()
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		Get(baseURL + "/posts/")
 
-	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("error making GET request: %w", err)
 	}
 
-	var posts []Post
-	if err := json.Unmarshal(body, &posts); err != nil {
+	if resp.IsError() {
+		return nil, fmt.Errorf("error response from server: %s", resp.Status())
+	}
+
+	if err := json.Unmarshal(resp.Body(), &posts); err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
 
 	return posts, nil
 }
 
-func GetPostByID(client *http.Client, id int) (post Post, err error) {
+func GetPostByID(client *resty.Client, id int) (post Post, err error) {
 	baseURL := GetUrl()
 
-	resp, err := client.Get(baseURL + "/posts/" + strconv.Itoa(id))
-	if err != nil {
-		return post, fmt.Errorf("%v", err)
-	}
-	defer resp.Body.Close()
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		Get(baseURL + "/posts/" + strconv.Itoa(id))
 
-	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return post, fmt.Errorf("%v", err)
 	}
 
-	if err := json.Unmarshal(body, &post); err != nil {
+	if err := json.Unmarshal(resp.Body(), &post); err != nil {
 		return post, fmt.Errorf("%v", err)
 	}
 
 	return post, nil
 }
 
-func CreatePost(client *http.Client, post Post) (created bool, err error) {
+func CreatePost(client *resty.Client, post Post) (created bool, err error) {
 	baseURL := GetUrl()
 
 	postData, err := json.Marshal(post)
@@ -88,76 +83,46 @@ func CreatePost(client *http.Client, post Post) (created bool, err error) {
 		return false, fmt.Errorf("%v", err)
 	}
 
-	resp, err := client.Post(baseURL+"/posts", "application/json", io.NopCloser(bytes.NewBuffer(postData)))
-	if err != nil {
-		return false, fmt.Errorf("%v", err)
-	}
-	defer resp.Body.Close()
+	_, err = client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(postData).
+		Post(baseURL + "/posts")
 
-	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("%v", err)
-	}
-
-	var createdPost Post
-	if err := json.Unmarshal(body, &createdPost); err != nil {
 		return false, fmt.Errorf("%v", err)
 	}
 
 	return true, nil
 }
 
-func UpdatePost(client *http.Client, id int, post Post) (Post, error) {
+func UpdatePost(client *resty.Client, id int, post Post) (updated bool, err error) {
 	baseURL := GetUrl()
 
-	postData, err := json.Marshal(post)
+	putData, err := json.Marshal(post)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("%v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, baseURL+"/posts/"+strconv.Itoa(id), io.NopCloser(bytes.NewBuffer(postData)))
+	_, err = client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(putData).
+		Put(baseURL + "/posts/" + strconv.Itoa(id))
+
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return post, fmt.Errorf("%v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("%v", err)
 	}
 
-	var updatedPost Post
-	if err := json.Unmarshal(body, &updatedPost); err != nil {
-		return post, fmt.Errorf("%v", err)
-	}
-
-	return updatedPost, nil
+	return true, nil
 }
 
-func DeletePost(client *http.Client, id int) error {
+func DeletePost(client *resty.Client, id int) (err error) {
 	baseURL := GetUrl()
 
-	req, err := http.NewRequest(http.MethodDelete, baseURL+"/posts/"+strconv.Itoa(id), nil)
+	_, err = client.R().
+		Delete(baseURL + "/posts/" + strconv.Itoa(id))
+
 	if err != nil {
 		return fmt.Errorf("%v", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		log := logger.GetLogger()
-		log.Info("Failed to delete post with ID %d: %s\n", id, resp.Status)
-		return fmt.Errorf("failed to delete post with ID %d: %s", id, resp.Status)
 	}
 	return nil
 }

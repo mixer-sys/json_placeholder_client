@@ -9,6 +9,7 @@ import (
 	handlers "json_placeholder_client/internal/app/handlers"
 	"json_placeholder_client/internal/app/logger"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -30,7 +31,7 @@ func GetProxyURL() (*url.URL, error) {
 	return proxyURL, nil
 }
 
-func GetClient() (*http.Client, error) {
+func GetClient() (*resty.Client, error) {
 	proxyURL, err := GetProxyURL()
 	if err != nil {
 		return nil, err
@@ -40,10 +41,8 @@ func GetClient() (*http.Client, error) {
 		Proxy: http.ProxyURL(proxyURL),
 	}
 
-	client := &http.Client{Transport: transport, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return nil
-	},
-	}
+	client := resty.New().
+		SetTransport(transport).SetRedirectPolicy(resty.FlexibleRedirectPolicy(302))
 	return client, nil
 }
 
@@ -76,11 +75,11 @@ func RunTestClient() error {
 
 	log.Info("Created Post ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 
-	updated_post, err := handlers.UpdatePost(client, postId, post)
+	_, err = handlers.UpdatePost(client, postId, post)
 	if err != nil {
 		return fmt.Errorf("error UpdatePost: %v", err)
 	}
-	log.Info("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
+	log.Info("Updated Post ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 
 	handlers.DeletePost(client, postId)
 	log.Info("Test client operations completed successfully.")

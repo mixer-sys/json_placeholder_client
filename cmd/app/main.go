@@ -17,6 +17,7 @@ func main() {
 
 	log := logger.GetLogger()
 	go server.Server()
+
 	log.Info("Server is running. Press Ctrl+C to stop.")
 	log.Info("Starting JSON Placeholder Client...")
 
