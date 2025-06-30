@@ -7,11 +7,11 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var LogLevel = map[string]int{
-	"DEBUG": -4,
-	"INFO":  0,
-	"WARN":  4,
-	"ERROR": 8,
+var LogLevel = map[string]slog.Level{
+	"DEBUG": slog.LevelDebug,
+	"INFO":  slog.LevelInfo,
+	"WARN":  slog.LevelWarn,
+	"ERROR": slog.LevelError,
 }
 
 func GetLoglevel() string {
