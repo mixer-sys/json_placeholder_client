@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io"
 	"net/http"
 
@@ -34,7 +35,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func Server() {
+func Run(ctx *context.Context) {
 	log := logger.GetLogger()
 	http.HandleFunc("/", handler)
 	log.Info("Server is running on port 8080...")

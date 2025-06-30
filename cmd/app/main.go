@@ -16,11 +16,12 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt)
 
 	log := logger.GetLogger()
-	go server.Server()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go server.Run(&ctx)
 	log.Info("Server is running. Press Ctrl+C to stop.")
 	log.Info("Starting JSON Placeholder Client...")
 
-	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
 		err := client.RunTestClient()
