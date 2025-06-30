@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"time"
 
 	"json_placeholder_client/internal/app/client"
 	"json_placeholder_client/internal/app/logger"
@@ -21,7 +20,7 @@ func main() {
 	log.Info("Server is running. Press Ctrl+C to stop.")
 	log.Info("Starting JSON Placeholder Client...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
 		err := client.RunTestClient()
