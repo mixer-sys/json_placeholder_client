@@ -52,14 +52,14 @@ func GetPort() (string, error) {
 func Server() {
 	log := logger.GetLogger()
 	http.HandleFunc("/", handler)
-	log.Info.Println("Server is running on port 8080...")
+	log.Info("Server is running on port 8080...")
 	port, err := GetPort()
 	if err != nil {
-		log.Error.Printf("Error get port: %v", err)
+		log.Error("Error get port: %v", err)
 	}
 	address := ":" + port
 	err = http.ListenAndServe(address, nil)
 	if err != nil {
-		log.Error.Printf("Server failed to start: %v", err)
+		log.Error("Server failed to start: %v", err)
 	}
 }

@@ -5,6 +5,6 @@
 Для быстрого старта выполните команды
 ```bash
 mv env.example .env
-docker build -t proxy .
-docker run -p 8080:8080 --env-file .env proxy
+docker build -t json_placeholder_client .
+docker run -p 8080:8080 --env-file .env json_placeholder_client
 ```

@@ -1,20 +1,42 @@
 package logger
 
 import (
-	"log"
 	"os"
+
+	"github.com/joho/godotenv"
+	"golang.org/x/exp/slog"
 )
 
-type Logger struct {
-	Info  *log.Logger
-	Error *log.Logger
-	Debug *log.Logger
+var LogLevel = map[string]int{
+	"DEBUG": -4,
+	"INFO":  0,
+	"WARN":  4,
+	"ERROR": 8,
 }
 
-func GetLogger() *Logger {
-	return &Logger{
-		Info:  log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile),
-		Error: log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile),
-		Debug: log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile),
+func GetLoglevel() string {
+	err := godotenv.Load()
+	if err != nil {
+		slog.Error("Error loading .env file: %v", err)
 	}
+
+	logLevel := os.Getenv("LogLevel")
+	if logLevel == "" {
+		slog.Error("LogLevel is not set in environment variables")
+		os.Exit(1)
+	}
+
+	return logLevel
+}
+
+func GetLogger() *slog.Logger {
+	logLevel := GetLoglevel()
+	opts := &slog.HandlerOptions{
+		Level: slog.Level(LogLevel[logLevel]),
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
+	return logger
+
 }

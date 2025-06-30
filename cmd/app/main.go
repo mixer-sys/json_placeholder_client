@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
+	"time"
 
 	"json_placeholder_client/internal/app/client"
 	"json_placeholder_client/internal/app/logger"
-
 	"json_placeholder_client/internal/app/server"
 )
 
@@ -17,15 +18,22 @@ func main() {
 
 	log := logger.GetLogger()
 	go server.Server()
-	log.Info.Println("Server is running. Press Ctrl+C to stop.")
-	log.Info.Println("Starting JSON Placeholder Client...")
+	log.Info("Server is running. Press Ctrl+C to stop.")
+	log.Info("Starting JSON Placeholder Client...")
 
-	err := client.RunTestClient()
-	if err != nil {
-		log.Error.Println(err)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	go func() {
+		err := client.RunTestClient()
+		if err != nil {
+			log.Error("Error", err)
+			os.Exit(1)
+		}
 
+	}()
 	<-sigChan
-	log.Info.Println("Received interrupt signal, shutting down...")
-
+	log.Info("Received interrupt signal, shutting down...")
+	cancel()
+	<-ctx.Done()
+	log.Info("Shutdown complete.")
 }
