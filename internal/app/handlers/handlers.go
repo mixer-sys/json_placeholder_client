@@ -39,21 +39,21 @@ func GetUrl() string {
 
 func GetPosts(client *http.Client) ([]Post, error) {
 	baseURL := GetUrl()
-
-	resp, err := client.Get(baseURL + "/posts")
+	url := baseURL + "/posts"
+	resp, err := client.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	var posts []Post
 	if err := json.Unmarshal(body, &posts); err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
 	return posts, nil
@@ -61,20 +61,20 @@ func GetPosts(client *http.Client) ([]Post, error) {
 
 func GetPostByID(client *http.Client, id int) (post Post, err error) {
 	baseURL := GetUrl()
-
-	resp, err := client.Get(baseURL + "/posts/" + strconv.Itoa(id))
+	url := baseURL + "/posts/" + strconv.Itoa(id)
+	resp, err := client.Get(url)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if err := json.Unmarshal(body, &post); err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
 	return post, nil
@@ -82,26 +82,26 @@ func GetPostByID(client *http.Client, id int) (post Post, err error) {
 
 func CreatePost(client *http.Client, post Post) (created bool, err error) {
 	baseURL := GetUrl()
-
+	url := baseURL + "/posts"
 	postData, err := json.Marshal(post)
 	if err != nil {
-		return false, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("error serializing post to JSON: %v", err)
 	}
 
-	resp, err := client.Post(baseURL+"/posts", "application/json", io.NopCloser(bytes.NewBuffer(postData)))
+	resp, err := client.Post(url, "application/json", io.NopCloser(bytes.NewBuffer(postData)))
 	if err != nil {
-		return false, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("error sending POST request to %s: %v", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("error reading response from server: %v", err)
 	}
 
 	var createdPost Post
 	if err := json.Unmarshal(body, &createdPost); err != nil {
-		return false, fmt.Errorf("%v", err)
+		return false, fmt.Errorf("error deserializing response into Post struct: %v", err)
 	}
 
 	return true, nil
@@ -109,32 +109,32 @@ func CreatePost(client *http.Client, post Post) (created bool, err error) {
 
 func UpdatePost(client *http.Client, id int, post Post) (Post, error) {
 	baseURL := GetUrl()
-
+	url := baseURL + "/posts/" + strconv.Itoa(id)
 	postData, err := json.Marshal(post)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("error serializing post to JSON: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, baseURL+"/posts/"+strconv.Itoa(id), io.NopCloser(bytes.NewBuffer(postData)))
+	req, err := http.NewRequest(http.MethodPut, url, io.NopCloser(bytes.NewBuffer(postData)))
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("error creating PUT request for post ID %d: %v", id, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("error sending PUT request to %s: %v", req.URL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("error reading response from server for post ID %d: %v", id, err)
 	}
 
 	var updatedPost Post
 	if err := json.Unmarshal(body, &updatedPost); err != nil {
-		return post, fmt.Errorf("%v", err)
+		return post, fmt.Errorf("error deserializing response into Post struct for post ID %d: %v", id, err)
 	}
 
 	return updatedPost, nil
@@ -142,15 +142,15 @@ func UpdatePost(client *http.Client, id int, post Post) (Post, error) {
 
 func DeletePost(client *http.Client, id int) error {
 	baseURL := GetUrl()
-
-	req, err := http.NewRequest(http.MethodDelete, baseURL+"/posts/"+strconv.Itoa(id), nil)
+	url := baseURL + "/posts/" + strconv.Itoa(id)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("error creating DELETE request for post ID %d: %v", id, err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("error sending DELETE request to %s: %v", url, err)
 	}
 	defer resp.Body.Close()
 

@@ -15,7 +15,7 @@ import (
 func GetProxyURL() (*url.URL, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error loading .env file: %v", err)
 	}
 	proxyStr := os.Getenv("PROXY_URL")
 	if proxyStr == "" {
