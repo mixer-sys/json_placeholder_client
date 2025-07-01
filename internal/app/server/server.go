@@ -5,15 +5,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"json_placeholder_client/internal/app/config"
 	"json_placeholder_client/internal/app/logger"
 )
 
+func doRequestWithRetries(req *http.Request, retries int, delay time.Duration) (resp *http.Response, err error) {
+	client := &http.Client{}
+
+	for i := 0; i < retries; i++ {
+		resp, err = client.Do(req)
+		if err == nil {
+			return resp, nil
+		}
+		time.Sleep(delay)
+	}
+
+	return nil, err
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	req, err := http.NewRequest(r.Method, r.URL.String(), r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, r.URL.String(), r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to create request: ", http.StatusInternalServerError)
 		return
 	}
 
@@ -21,10 +36,20 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		req.Header[key] = value
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	retries, err := config.GetRetries()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "Error getting retries from config: ", http.StatusInternalServerError)
+		return
+	}
+	delay, err := config.GetRetryDelay()
+	if err != nil {
+		http.Error(w, "Error getting retry delay from config", http.StatusGatewayTimeout)
+		return
+	}
+
+	resp, err := doRequestWithRetries(req, retries, time.Duration(delay)*time.Second)
+	if err != nil {
+		http.Error(w, "Request failed after retries: ", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -36,7 +61,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func Run(ctx *context.Context) error {
+func Run(ctx context.Context) error {
 	log := logger.GetLogger()
 	http.HandleFunc("/", handler)
 	log.Info("Server is running on port 8080...")

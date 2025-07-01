@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,7 +38,7 @@ func GetUrl() string {
 	return baseURL
 }
 
-func GetPosts(client *http.Client) ([]Post, error) {
+func GetPosts(ctx context.Context, client *http.Client) ([]Post, error) {
 	baseURL := GetUrl()
 	url := baseURL + "/posts"
 	resp, err := client.Get(url)
@@ -59,7 +60,7 @@ func GetPosts(client *http.Client) ([]Post, error) {
 	return posts, nil
 }
 
-func GetPostByID(client *http.Client, id int) (post Post, err error) {
+func GetPostByID(ctx context.Context, client *http.Client, id int) (post Post, err error) {
 	baseURL := GetUrl()
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	resp, err := client.Get(url)
@@ -80,7 +81,7 @@ func GetPostByID(client *http.Client, id int) (post Post, err error) {
 	return post, nil
 }
 
-func CreatePost(client *http.Client, post Post) (created bool, err error) {
+func CreatePost(ctx context.Context, client *http.Client, post Post) (created bool, err error) {
 	baseURL := GetUrl()
 	url := baseURL + "/posts"
 	postData, err := json.Marshal(post)
@@ -107,7 +108,7 @@ func CreatePost(client *http.Client, post Post) (created bool, err error) {
 	return true, nil
 }
 
-func UpdatePost(client *http.Client, id int, post Post) (Post, error) {
+func UpdatePost(ctx context.Context, client *http.Client, id int, post Post) (Post, error) {
 	baseURL := GetUrl()
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	postData, err := json.Marshal(post)
@@ -140,7 +141,7 @@ func UpdatePost(client *http.Client, id int, post Post) (Post, error) {
 	return updatedPost, nil
 }
 
-func DeletePost(client *http.Client, id int) error {
+func DeletePost(ctx context.Context, client *http.Client, id int) error {
 	baseURL := GetUrl()
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequest(http.MethodDelete, url, nil)

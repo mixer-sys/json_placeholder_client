@@ -19,7 +19,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		err := server.Run(&ctx)
+		err := server.Run(ctx)
 		if err != nil {
 			log.Error("Error starting server: %v", err)
 			os.Exit(1)
@@ -30,7 +30,7 @@ func main() {
 
 	defer cancel()
 	go func() {
-		err := client.RunTestClient()
+		err := client.RunTestClient(ctx)
 		if err != nil {
 			log.Error("Error", err)
 			os.Exit(1)
