@@ -2,24 +2,31 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 
 	"json_placeholder_client/internal/app/client"
+	"json_placeholder_client/internal/app/config"
 	"json_placeholder_client/internal/app/logger"
 	"json_placeholder_client/internal/app/server"
 )
 
 func main() {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		fmt.Printf("Error getting config: %v", err)
+		os.Exit(1)
+	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 
-	log := logger.GetLogger()
+	log := logger.GetLogger(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		err := server.Run(ctx)
+		err := server.Run(cfg, ctx)
 		if err != nil {
 			log.Error("Error starting server: %v", err)
 			os.Exit(1)

@@ -35,17 +35,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	for key, value := range r.Header {
 		req.Header[key] = value
 	}
+	cfg, err := config.GetConfig()
+	if err != nil {
+		http.Error(w, "Error getting config: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	retries, err := config.GetRetries()
-	if err != nil {
-		http.Error(w, "Error getting retries from config: ", http.StatusInternalServerError)
-		return
-	}
-	delay, err := config.GetRetryDelay()
-	if err != nil {
-		http.Error(w, "Error getting retry delay from config", http.StatusGatewayTimeout)
-		return
-	}
+	retries := cfg.Retries
+	delay := cfg.RetryDelay
 
 	resp, err := doRequestWithRetries(req, retries, time.Duration(delay)*time.Second)
 	if err != nil {
@@ -61,17 +58,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func Run(ctx context.Context) error {
-	log := logger.GetLogger()
+func Run(cfg *config.Config, ctx context.Context) error {
+	log := logger.GetLogger(cfg)
 	http.HandleFunc("/", handler)
 	log.Info("Server is running on port 8080...")
-	port, err := config.GetPort()
-	if err != nil {
-		log.Error("Error get port: %v", err)
-		return fmt.Errorf("error getting port: %v", err)
-	}
-	address := ":" + port
-	err = http.ListenAndServe(address, nil)
+
+	address := ":" + cfg.Port
+	err := http.ListenAndServe(address, nil)
 	if err != nil {
 		log.Error("Server failed to start: %v", err)
 		return fmt.Errorf("server failed to start: %v", err)

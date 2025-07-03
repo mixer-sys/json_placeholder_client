@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 
+	"json_placeholder_client/internal/app/config"
 	logger "json_placeholder_client/internal/app/logger"
-
-	"github.com/joho/godotenv"
 )
 
 type Post struct {
@@ -22,26 +20,15 @@ type Post struct {
 	Body   string `json:"body"`
 }
 
-func GetUrl() string {
-	log := logger.GetLogger()
-	err := godotenv.Load()
-	if err != nil {
-		log.Error("Error loading .env file: %v", err)
-	}
-
-	baseURL := os.Getenv("BASE_URL")
-	if baseURL == "" {
-		log.Error("BASE_URL is not set in environment variables")
-		os.Exit(1)
-	}
-
-	return baseURL
-}
-
-func GetPosts(ctx context.Context, client *http.Client) ([]Post, error) {
-	baseURL := GetUrl()
+func GetPosts(cfg *config.Config, ctx context.Context, client *http.Client) (posts []Post, err error) {
+	baseURL := cfg.BaseURL
 	url := baseURL + "/posts"
-	resp, err := client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return posts, fmt.Errorf("failed to create request to %s: %w", url, err)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
@@ -52,7 +39,6 @@ func GetPosts(ctx context.Context, client *http.Client) ([]Post, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var posts []Post
 	if err := json.Unmarshal(body, &posts); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
@@ -60,10 +46,15 @@ func GetPosts(ctx context.Context, client *http.Client) ([]Post, error) {
 	return posts, nil
 }
 
-func GetPostByID(ctx context.Context, client *http.Client, id int) (post Post, err error) {
-	baseURL := GetUrl()
+func GetPostByID(cfg *config.Config, ctx context.Context, client *http.Client, id int) (post Post, err error) {
+	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
-	resp, err := client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return post, fmt.Errorf("failed to create request to %s: %w", url, err)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return post, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
@@ -81,15 +72,20 @@ func GetPostByID(ctx context.Context, client *http.Client, id int) (post Post, e
 	return post, nil
 }
 
-func CreatePost(ctx context.Context, client *http.Client, post Post) (created bool, err error) {
-	baseURL := GetUrl()
+func CreatePost(cfg *config.Config, ctx context.Context, client *http.Client, post Post) (created bool, err error) {
+	baseURL := cfg.BaseURL
 	url := baseURL + "/posts"
 	postData, err := json.Marshal(post)
 	if err != nil {
 		return false, fmt.Errorf("error serializing post to JSON: %v", err)
 	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, io.NopCloser(bytes.NewBuffer(postData)))
+	if err != nil {
+		return false, fmt.Errorf("error creating request to %s: %v", url, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Post(url, "application/json", io.NopCloser(bytes.NewBuffer(postData)))
+	resp, err := client.Do(req)
 	if err != nil {
 		return false, fmt.Errorf("error sending POST request to %s: %v", url, err)
 	}
@@ -108,15 +104,15 @@ func CreatePost(ctx context.Context, client *http.Client, post Post) (created bo
 	return true, nil
 }
 
-func UpdatePost(ctx context.Context, client *http.Client, id int, post Post) (Post, error) {
-	baseURL := GetUrl()
+func UpdatePost(cfg *config.Config, ctx context.Context, client *http.Client, id int, post Post) (Post, error) {
+	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	postData, err := json.Marshal(post)
 	if err != nil {
 		return post, fmt.Errorf("error serializing post to JSON: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, url, io.NopCloser(bytes.NewBuffer(postData)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, io.NopCloser(bytes.NewBuffer(postData)))
 	if err != nil {
 		return post, fmt.Errorf("error creating PUT request for post ID %d: %v", id, err)
 	}
@@ -141,10 +137,10 @@ func UpdatePost(ctx context.Context, client *http.Client, id int, post Post) (Po
 	return updatedPost, nil
 }
 
-func DeletePost(ctx context.Context, client *http.Client, id int) error {
-	baseURL := GetUrl()
+func DeletePost(cfg *config.Config, ctx context.Context, client *http.Client, id int) error {
+	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return fmt.Errorf("error creating DELETE request for post ID %d: %v", id, err)
 	}
@@ -156,7 +152,7 @@ func DeletePost(ctx context.Context, client *http.Client, id int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		log := logger.GetLogger()
+		log := logger.GetLogger(cfg)
 		log.Info("Failed to delete post with ID %d: %s\n", id, resp.Status)
 		return fmt.Errorf("failed to delete post with ID %d: %s", id, resp.Status)
 	}
