@@ -23,7 +23,7 @@ func GetClient(cfg *config.Config) (client *http.Client, err error) {
 }
 
 func RunTestClient(ctx context.Context) error {
-	cfg, err := config.GetConfig()
+	cfg, err := config.Load()
 	log := logger.GetLogger(cfg)
 	if err != nil {
 		return fmt.Errorf("error getting config: %v", err)
@@ -34,33 +34,33 @@ func RunTestClient(ctx context.Context) error {
 
 	}
 
-	posts, err := handlers.GetPosts(cfg, ctx, client)
+	posts, err := handlers.GetPosts(ctx, cfg, client)
 	if err != nil {
 		return fmt.Errorf("error GetPosts: %v", err)
 	}
 	log.Info("Retrieved posts successfully. Total posts:", len(posts))
 
 	postId := 1
-	post, err := handlers.GetPostByID(cfg, ctx, client, postId)
+	post, err := handlers.GetPostByID(ctx, cfg, client, postId)
 	if err != nil {
 		return fmt.Errorf("error GetPostByID: %v", err)
 	}
 	log.Info("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 
-	_, err = handlers.CreatePost(cfg, ctx, client, post)
+	_, err = handlers.CreatePost(ctx, cfg, client, post)
 	if err != nil {
 		return fmt.Errorf("error CreatePost: %v", err)
 	}
 
 	log.Info("Created Post ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
 
-	updated_post, err := handlers.UpdatePost(cfg, ctx, client, postId, post)
+	updated_post, err := handlers.UpdatePost(ctx, cfg, client, postId, post)
 	if err != nil {
 		return fmt.Errorf("error UpdatePost: %v", err)
 	}
 	log.Info("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
 
-	handlers.DeletePost(cfg, ctx, client, postId)
+	handlers.DeletePost(ctx, cfg, client, postId)
 	log.Info("Test client operations completed successfully.")
 	return nil
 }

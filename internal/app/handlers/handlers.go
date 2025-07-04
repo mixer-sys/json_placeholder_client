@@ -20,7 +20,7 @@ type Post struct {
 	Body   string `json:"body"`
 }
 
-func GetPosts(cfg *config.Config, ctx context.Context, client *http.Client) (posts []Post, err error) {
+func GetPosts(ctx context.Context, cfg *config.Config, client *http.Client) (posts []Post, err error) {
 	baseURL := cfg.BaseURL
 	url := baseURL + "/posts"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -46,7 +46,7 @@ func GetPosts(cfg *config.Config, ctx context.Context, client *http.Client) (pos
 	return posts, nil
 }
 
-func GetPostByID(cfg *config.Config, ctx context.Context, client *http.Client, id int) (post Post, err error) {
+func GetPostByID(ctx context.Context, cfg *config.Config, client *http.Client, id int) (post Post, err error) {
 	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -72,7 +72,7 @@ func GetPostByID(cfg *config.Config, ctx context.Context, client *http.Client, i
 	return post, nil
 }
 
-func CreatePost(cfg *config.Config, ctx context.Context, client *http.Client, post Post) (created bool, err error) {
+func CreatePost(ctx context.Context, cfg *config.Config, client *http.Client, post Post) (created bool, err error) {
 	baseURL := cfg.BaseURL
 	url := baseURL + "/posts"
 	postData, err := json.Marshal(post)
@@ -104,7 +104,7 @@ func CreatePost(cfg *config.Config, ctx context.Context, client *http.Client, po
 	return true, nil
 }
 
-func UpdatePost(cfg *config.Config, ctx context.Context, client *http.Client, id int, post Post) (Post, error) {
+func UpdatePost(ctx context.Context, cfg *config.Config, client *http.Client, id int, post Post) (Post, error) {
 	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	postData, err := json.Marshal(post)
@@ -137,7 +137,7 @@ func UpdatePost(cfg *config.Config, ctx context.Context, client *http.Client, id
 	return updatedPost, nil
 }
 
-func DeletePost(cfg *config.Config, ctx context.Context, client *http.Client, id int) error {
+func DeletePost(ctx context.Context, cfg *config.Config, client *http.Client, id int) error {
 	baseURL := cfg.BaseURL
 	url := baseURL + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)

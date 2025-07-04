@@ -35,7 +35,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	for key, value := range r.Header {
 		req.Header[key] = value
 	}
-	cfg, err := config.GetConfig()
+	cfg, err := config.Load()
 	if err != nil {
 		http.Error(w, "Error getting config: "+err.Error(), http.StatusInternalServerError)
 		return

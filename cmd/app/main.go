@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.GetConfig()
+	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("Error getting config: %v", err)
 		os.Exit(1)
