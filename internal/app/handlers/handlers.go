@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"json_placeholder_client/internal/app/config"
-	logger "json_placeholder_client/internal/app/logger"
 )
 
 type Post struct {
@@ -20,15 +20,39 @@ type Post struct {
 	Body   string `json:"body"`
 }
 
-func GetPosts(ctx context.Context, cfg *config.Config, client *http.Client) (posts []Post, err error) {
-	baseURL := cfg.BaseURL
-	url := baseURL + "/posts"
+type PostClient struct {
+	BaseURL  *url.URL
+	Client   *http.Client
+	ProxyURL *url.URL
+}
+
+func NewPostClient(cfg *config.Config, client *http.Client) *PostClient {
+	return &PostClient{
+		BaseURL:  cfg.BaseURL,
+		Client:   client,
+		ProxyURL: cfg.ProxyURL,
+	}
+}
+
+func (pc *PostClient) SetClient() {
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(pc.ProxyURL),
+	}
+
+	pc.Client = &http.Client{Transport: transport, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return nil
+	},
+	}
+}
+
+func (pc *PostClient) GetPosts(ctx context.Context) (posts []Post, err error) {
+	url := pc.BaseURL.String() + "/posts"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return posts, fmt.Errorf("failed to create request to %s: %w", url, err)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := pc.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
@@ -46,15 +70,14 @@ func GetPosts(ctx context.Context, cfg *config.Config, client *http.Client) (pos
 	return posts, nil
 }
 
-func GetPostByID(ctx context.Context, cfg *config.Config, client *http.Client, id int) (post Post, err error) {
-	baseURL := cfg.BaseURL
-	url := baseURL + "/posts/" + strconv.Itoa(id)
+func (pc *PostClient) GetPostByID(ctx context.Context, id int) (post Post, err error) {
+	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return post, fmt.Errorf("failed to create request to %s: %w", url, err)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := pc.Client.Do(req)
 	if err != nil {
 		return post, fmt.Errorf("failed to make GET request to %s: %w", url, err)
 	}
@@ -72,9 +95,9 @@ func GetPostByID(ctx context.Context, cfg *config.Config, client *http.Client, i
 	return post, nil
 }
 
-func CreatePost(ctx context.Context, cfg *config.Config, client *http.Client, post Post) (created bool, err error) {
-	baseURL := cfg.BaseURL
-	url := baseURL + "/posts"
+func (pc *PostClient) CreatePost(ctx context.Context, post Post) (created bool, err error) {
+
+	url := pc.BaseURL.String() + "/posts"
 	postData, err := json.Marshal(post)
 	if err != nil {
 		return false, fmt.Errorf("error serializing post to JSON: %v", err)
@@ -85,7 +108,7 @@ func CreatePost(ctx context.Context, cfg *config.Config, client *http.Client, po
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := pc.Client.Do(req)
 	if err != nil {
 		return false, fmt.Errorf("error sending POST request to %s: %v", url, err)
 	}
@@ -104,9 +127,9 @@ func CreatePost(ctx context.Context, cfg *config.Config, client *http.Client, po
 	return true, nil
 }
 
-func UpdatePost(ctx context.Context, cfg *config.Config, client *http.Client, id int, post Post) (Post, error) {
-	baseURL := cfg.BaseURL
-	url := baseURL + "/posts/" + strconv.Itoa(id)
+func (pc *PostClient) UpdatePost(ctx context.Context, id int, post Post) (Post, error) {
+
+	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
 	postData, err := json.Marshal(post)
 	if err != nil {
 		return post, fmt.Errorf("error serializing post to JSON: %v", err)
@@ -118,7 +141,7 @@ func UpdatePost(ctx context.Context, cfg *config.Config, client *http.Client, id
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := pc.Client.Do(req)
 	if err != nil {
 		return post, fmt.Errorf("error sending PUT request to %s: %v", req.URL, err)
 	}
@@ -137,23 +160,20 @@ func UpdatePost(ctx context.Context, cfg *config.Config, client *http.Client, id
 	return updatedPost, nil
 }
 
-func DeletePost(ctx context.Context, cfg *config.Config, client *http.Client, id int) error {
-	baseURL := cfg.BaseURL
-	url := baseURL + "/posts/" + strconv.Itoa(id)
+func (pc *PostClient) DeletePost(ctx context.Context, id int) error {
+	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return fmt.Errorf("error creating DELETE request for post ID %d: %v", id, err)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := pc.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error sending DELETE request to %s: %v", url, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		log := logger.GetLogger(cfg)
-		log.Info("Failed to delete post with ID %d: %s\n", id, resp.Status)
 		return fmt.Errorf("failed to delete post with ID %d: %s", id, resp.Status)
 	}
 	return nil

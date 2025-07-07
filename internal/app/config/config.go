@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	BaseURL    string   `env:"BASE_URL" envDefault:"http://jsonplaceholder.typicode.com"`
+	BaseURL    *url.URL `env:"BASE_URL" envDefault:"http://jsonplaceholder.typicode.com"`
 	Port       string   `env:"PORT" envDefault:"8080"`
 	Retries    int      `env:"RETRIES" envDefault:"3"`
 	RetryDelay int      `env:"RETRY_DELAY" envDefault:"1000"`
