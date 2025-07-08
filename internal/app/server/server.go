@@ -33,7 +33,7 @@ func doRequestWithRetries(req *http.Request, retries int,
 	return nil, err
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	req, err := http.NewRequestWithContext(r.Context(),
 		r.Method, r.URL.String(), r.Body)
 	if err != nil {
@@ -44,11 +44,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	for key, value := range r.Header {
 		req.Header[key] = value
-	}
-	cfg, err := config.Load()
-	if err != nil {
-		http.Error(w, "Error getting config: "+err.Error(), http.StatusInternalServerError)
-		return
 	}
 
 	retries := cfg.Retries
@@ -72,7 +67,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func Run(cfg *config.Config, ctx context.Context) error {
 	log := logger.GetLogger(cfg)
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		handler(w, r, cfg)
+	})
 
 	address := ":" + cfg.Port
 	log.Info("Server is running on ",
