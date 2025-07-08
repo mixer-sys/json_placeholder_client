@@ -15,7 +15,7 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("Error getting config: %v", err)
+		fmt.Printf("Error getting config: %w", err)
 		os.Exit(1)
 	}
 
@@ -28,7 +28,7 @@ func main() {
 	go func() {
 		err := server.Run(cfg, ctx)
 		if err != nil {
-			log.Error("Error starting server: %v", err)
+			log.Error("Error starting server: %w", err)
 			os.Exit(1)
 		}
 	}()

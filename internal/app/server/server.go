@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,7 +12,9 @@ import (
 	"json_placeholder_client/internal/app/logger"
 )
 
-func doRequestWithRetries(req *http.Request, retries int, delay time.Duration) (resp *http.Response, err error) {
+func doRequestWithRetries(req *http.Request, retries int,
+	delay time.Duration) (resp *http.Response, err error) {
+
 	client := &http.Client{}
 
 	for i := 0; i < retries; i++ {
@@ -19,6 +22,10 @@ func doRequestWithRetries(req *http.Request, retries int, delay time.Duration) (
 		if err == nil {
 			return resp, nil
 		}
+		slog.Warn("Request failed",
+			slog.Int("attempt", i+1),
+			slog.String("error", err.Error()),
+		)
 		time.Sleep(delay)
 	}
 
@@ -26,9 +33,11 @@ func doRequestWithRetries(req *http.Request, retries int, delay time.Duration) (
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, r.URL.String(), r.Body)
+	req, err := http.NewRequestWithContext(r.Context(),
+		r.Method, r.URL.String(), r.Body)
 	if err != nil {
-		http.Error(w, "Failed to create request: ", http.StatusInternalServerError)
+		http.Error(w, "Failed to create request: ",
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -44,9 +53,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	retries := cfg.Retries
 	delay := cfg.RetryDelay
 
-	resp, err := doRequestWithRetries(req, retries, time.Duration(delay)*time.Second)
+	resp, err := doRequestWithRetries(req, retries,
+		time.Duration(delay)*time.Second)
 	if err != nil {
-		http.Error(w, "Request failed after retries: ", http.StatusBadGateway)
+		http.Error(w, "Request failed after retries: ",
+			http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -61,13 +72,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func Run(cfg *config.Config, ctx context.Context) error {
 	log := logger.GetLogger(cfg)
 	http.HandleFunc("/", handler)
-	log.Info("Server is running on port 8080...")
 
 	address := ":" + cfg.Port
+	log.Info("Server is running on ",
+		slog.String("address", address),
+	)
 	err := http.ListenAndServe(address, nil)
 	if err != nil {
-		log.Error("Server failed to start: %v", err)
-		return fmt.Errorf("server failed to start: %v", err)
+		log.Error("Server failed to start: %w", err)
+		return fmt.Errorf("server failed to start: %w", err)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"json_placeholder_client/internal/app/config"
 	handlers "json_placeholder_client/internal/app/handlers"
@@ -13,7 +14,7 @@ func RunTestClient(ctx context.Context) error {
 	cfg, err := config.Load()
 	log := logger.GetLogger(cfg)
 	if err != nil {
-		return fmt.Errorf("error getting config: %v", err)
+		return fmt.Errorf("error getting config: %w", err)
 	}
 	pc := handlers.NewPostClient(cfg, nil)
 
@@ -21,31 +22,44 @@ func RunTestClient(ctx context.Context) error {
 
 	posts, err := pc.GetPosts(ctx)
 	if err != nil {
-		return fmt.Errorf("error GetPosts: %v", err)
+		return fmt.Errorf("error GetPosts: %w", err)
 	}
-	log.Info("Retrieved posts successfully. Total posts:", len(posts))
+	log.Info("Retrieved posts successfully. Total posts:",
+		len(posts),
+	)
 
 	postId := 1
 	post, err := pc.GetPostByID(ctx, postId)
 	if err != nil {
-		return fmt.Errorf("error GetPostByID: %v", err)
+		return fmt.Errorf("error GetPostByID: %w", err)
 	}
-	log.Info("Got ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
-
+	log.Info("Got post",
+		slog.Int("id", post.ID),
+		slog.String("title", post.Title),
+		slog.String("body", post.Body),
+	)
 	_, err = pc.CreatePost(ctx, post)
 	if err != nil {
-		return fmt.Errorf("error CreatePost: %v", err)
+		return fmt.Errorf("error CreatePost: %w", err)
 	}
 
-	log.Info("Created Post ID: %d, Title: %s, Body: %s", post.ID, post.Title, post.Body)
-
-	updated_post, err := pc.UpdatePost(ctx, postId, post)
+	log.Info("Created post",
+		slog.Int("id", post.ID),
+		slog.String("title", post.Title),
+		slog.String("body", post.Body),
+	)
+	updatedPost, err := pc.UpdatePost(ctx, postId, post)
 	if err != nil {
-		return fmt.Errorf("error UpdatePost: %v", err)
+		return fmt.Errorf("error UpdatePost: %w", err)
 	}
-	log.Info("Updated Post ID: %d, Title: %s, Body: %s", updated_post.ID, updated_post.Title, updated_post.Body)
-
+	log.Info("Updated post",
+		slog.Int("id", updatedPost.ID),
+		slog.String("title", updatedPost.Title),
+		slog.String("body", updatedPost.Body),
+	)
 	pc.DeletePost(ctx, postId)
-	log.Info("Test client operations completed successfully.")
+	log.Info("Test client operations completed successfully.",
+		slog.Int("postId", postId),
+	)
 	return nil
 }
