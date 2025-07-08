@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"time"
+
+	"golang.org/x/exp/slog"
 
 	"json_placeholder_client/internal/app/config"
 	"json_placeholder_client/internal/app/logger"

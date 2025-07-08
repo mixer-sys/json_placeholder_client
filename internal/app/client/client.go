@@ -3,7 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
-	"log/slog"
+
+	"golang.org/x/exp/slog"
 
 	"json_placeholder_client/internal/app/config"
 	handlers "json_placeholder_client/internal/app/handlers"
