@@ -16,9 +16,9 @@ import (
 func doRequestWithRetries(req *http.Request, retries int,
 	delay time.Duration) (resp *http.Response, err error) {
 
-	client := &http.Client{}
+	client := http.DefaultClient
 
-	for i := 0; i < retries; i++ {
+	for i := range retries {
 		resp, err = client.Do(req)
 		if err == nil {
 			return resp, nil
@@ -47,7 +47,7 @@ func handler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	retries := cfg.Retries
-	delay := cfg.RetryDelay
+	delay := cfg.RetryDelaySeconds
 
 	resp, err := doRequestWithRetries(req, retries,
 		time.Duration(delay)*time.Second)
@@ -65,7 +65,7 @@ func handler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	io.Copy(w, resp.Body)
 }
 
-func Run(cfg *config.Config, ctx context.Context) error {
+func Run(ctx context.Context, cfg *config.Config) error {
 	log := logger.GetLogger(cfg)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handler(w, r, cfg)

@@ -9,12 +9,12 @@ import (
 )
 
 type Config struct {
-	BaseURL    *url.URL `env:"BASE_URL" envDefault:"http://jsonplaceholder.typicode.com"`
-	Port       string   `env:"PORT" envDefault:"8080"`
-	Retries    int      `env:"RETRIES" envDefault:"3"`
-	RetryDelay int      `env:"RETRY_DELAY" envDefault:"1000"`
-	LogLevel   string   `env:"LOG_LEVEL" envDefault:"info"`
-	ProxyURL   *url.URL `env:"PROXY_URL" envDefault:"http://localhost:8080"`
+	BaseURL           *url.URL `env:"BASE_URL" envDefault:"http://jsonplaceholder.typicode.com"`
+	Port              string   `env:"PORT" envDefault:"8080"`
+	Retries           int      `env:"RETRIES" envDefault:"3"`
+	RetryDelaySeconds int      `env:"RETRY_DELAY_SECONDS" envDefault:"1000"`
+	LogLevel          string   `env:"LOG_LEVEL" envDefault:"info"`
+	ProxyURL          *url.URL `env:"PROXY_URL" envDefault:"http://localhost:8080"`
 }
 
 func Load() (*Config, error) {
