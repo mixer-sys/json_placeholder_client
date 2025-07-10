@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"json_placeholder_client/internal/app/client"
 	"json_placeholder_client/internal/app/config"
@@ -24,28 +25,44 @@ func main() {
 
 	log := logger.GetLogger(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+
 	go func() {
-		err := server.Run(ctx, cfg)
-		if err != nil {
-			log.Error("Error starting server: %w", err)
-			os.Exit(1)
+		for {
+			select {
+			case <-ctx.Done():
+				log.Info("server.Run end")
+				return
+			default:
+				err := server.Run(ctx, cfg)
+				if err != nil {
+					log.Error("Error starting server: %w", err)
+					os.Exit(1)
+				}
+			}
 		}
 	}()
 	log.Info("Server is running. Press Ctrl+C to stop.")
 	log.Info("Starting JSON Placeholder Client...")
 
 	go func() {
-		err := client.RunTestClient(ctx)
-		if err != nil {
-			log.Error("Error", err)
-			os.Exit(1)
+		for {
+			select {
+			case <-ctx.Done():
+				log.Info("RunTestClient end")
+				return
+			default:
+				err := client.RunTestClient(ctx)
+				if err != nil {
+					log.Error("Error", err)
+					os.Exit(1)
+				}
+			}
 		}
-
 	}()
 	<-sigChan
 	log.Info("Received interrupt signal, shutting down...")
 	cancel()
 	<-ctx.Done()
+	time.Sleep(1 * time.Second)
 	log.Info("Shutdown complete.")
 }

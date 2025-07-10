@@ -46,11 +46,8 @@ func handler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		req.Header[key] = value
 	}
 
-	retries := cfg.Retries
-	delay := cfg.RetryDelaySeconds
-
-	resp, err := doRequestWithRetries(req, retries,
-		time.Duration(delay)*time.Second)
+	resp, err := doRequestWithRetries(req, cfg.Retries,
+		time.Duration(cfg.RetryDelaySeconds)*time.Second)
 	if err != nil {
 		http.Error(w, "Request failed after retries: ",
 			http.StatusBadGateway)

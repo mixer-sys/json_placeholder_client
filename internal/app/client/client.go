@@ -87,29 +87,28 @@ func (pc *PostClient) GetPosts(ctx context.Context) (
 }
 
 func (pc *PostClient) GetPostByID(ctx context.Context, id int) (
-	Post, error) {
+	post Post, err error) {
 	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return Post{}, fmt.Errorf(
+		return post, fmt.Errorf(
 			"failed to create request to %s: %w", url, err)
 	}
 
 	resp, err := pc.Client.Do(req)
 	if err != nil {
-		return Post{}, fmt.Errorf(
+		return post, fmt.Errorf(
 			"failed to make GET request to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return Post{}, fmt.Errorf(
+		return post, fmt.Errorf(
 			"failed to read response body: %w", err)
 	}
-	var post Post
 	if err := json.Unmarshal(body, &post); err != nil {
-		return Post{}, fmt.Errorf(
+		return post, fmt.Errorf(
 			"failed to unmarshal response body: %w", err)
 	}
 
