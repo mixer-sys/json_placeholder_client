@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"json_placeholder_client/internal/app/client"
 	"json_placeholder_client/internal/app/config"
@@ -17,7 +16,7 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("Error getting config: %w", err)
-		os.Exit(1)
+		return
 	}
 
 	sigChan := make(chan os.Signal, 1)
@@ -25,7 +24,7 @@ func main() {
 
 	log := logger.GetLogger(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
-
+	defer cancel()
 	go func() {
 		for {
 			select {
@@ -63,6 +62,6 @@ func main() {
 	log.Info("Received interrupt signal, shutting down...")
 	cancel()
 	<-ctx.Done()
-	time.Sleep(1 * time.Second)
+
 	log.Info("Shutdown complete.")
 }

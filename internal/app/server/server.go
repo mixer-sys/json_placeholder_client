@@ -16,10 +16,8 @@ import (
 func doRequestWithRetries(req *http.Request, retries int,
 	delay time.Duration) (resp *http.Response, err error) {
 
-	client := http.DefaultClient
-
 	for i := range retries {
-		resp, err = client.Do(req)
+		resp, err = http.DefaultClient.Do(req)
 		if err == nil {
 			return resp, nil
 		}
