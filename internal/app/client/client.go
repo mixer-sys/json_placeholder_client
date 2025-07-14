@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"golang.org/x/exp/slog"
@@ -17,20 +16,7 @@ import (
 	"json_placeholder_client/internal/app/logger"
 )
 
-type Post struct {
-	UserId int    `json:"user_id"`
-	ID     int    `json:"id,omitempty"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-}
-
-type PostClient struct {
-	BaseURL  *url.URL
-	Client   *http.Client
-	ProxyURL *url.URL
-}
-
-func NewPostClient(cfg *config.Config) *PostClient {
+func New(cfg *config.Config) *PostClient {
 	transport := &http.Transport{
 		Proxy: http.ProxyURL(cfg.ProxyURL),
 	}
@@ -51,7 +37,7 @@ func NewPostClient(cfg *config.Config) *PostClient {
 }
 
 func (pc *PostClient) GetPosts(ctx context.Context) (
-	[]Post, error) {
+	posts []Post, err error) {
 	url := pc.BaseURL.String() + "/posts"
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, url, nil,
@@ -76,7 +62,6 @@ func (pc *PostClient) GetPosts(ctx context.Context) (
 			"failed to read response body: %w", err,
 		)
 	}
-	var posts []Post
 	if err := json.Unmarshal(body, &posts); err != nil {
 		return nil, fmt.Errorf(
 			"failed to unmarshal response body: %w", err,
@@ -225,7 +210,7 @@ func RunTestClient(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error getting config: %w", err)
 	}
-	pc := NewPostClient(cfg)
+	pc := New(cfg)
 
 	posts, err := pc.GetPosts(ctx)
 	if err != nil {
