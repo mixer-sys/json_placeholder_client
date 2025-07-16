@@ -35,7 +35,7 @@ func main() {
 				err := server.Run(ctx, cfg)
 				if err != nil {
 					log.Error("Error starting server: %w", err)
-					os.Exit(1)
+					return
 				}
 			}
 		}
@@ -53,7 +53,7 @@ func main() {
 				err := client.RunTestClient(ctx)
 				if err != nil {
 					log.Error("Error", err)
-					os.Exit(1)
+					return
 				}
 			}
 		}
