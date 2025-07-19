@@ -1,14 +1,10 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
 
+	"github.com/go-resty/resty/v2"
 	"golang.org/x/exp/slog"
 
 	"json_placeholder_client/internal/app/config"
@@ -17,189 +13,86 @@ import (
 )
 
 func New(cfg *config.Config) *PostClient {
-	transport := &http.Transport{
-		Proxy: http.ProxyURL(cfg.ProxyURL),
-	}
-
-	client := &http.Client{
-		Transport: transport,
-		CheckRedirect: func(
-			req *http.Request, via []*http.Request) error {
-			return nil
-		},
-	}
+	client := resty.New().
+		SetBaseURL(cfg.BaseURL.String()).
+		SetProxy(cfg.ProxyURL.String()).
+		SetHeader("Content-Type", "application/json")
 
 	return &PostClient{
-		BaseURL:  cfg.BaseURL,
-		Client:   client,
-		ProxyURL: cfg.ProxyURL,
+		BaseURL: cfg.BaseURL,
+		Client:  client,
 	}
 }
 
 func (pc *PostClient) GetPosts(ctx context.Context) (
 	posts []Post, err error) {
-	url := pc.BaseURL.String() + "/posts"
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodGet, url, nil,
-	)
+	resp, err := pc.Client.R().
+		SetContext(ctx).
+		SetResult(&posts).
+		Get("/posts")
 	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to create request to %s: %w", url, err,
-		)
+		return nil, fmt.Errorf("failed to make GET request: %w", err)
 	}
-
-	resp, err := pc.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to make GET request to %s: %w", url, err,
-		)
+	if resp.IsError() {
+		return nil, fmt.Errorf("error response: %s", resp.Status())
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to read response body: %w", err,
-		)
-	}
-	if err := json.Unmarshal(body, &posts); err != nil {
-		return nil, fmt.Errorf(
-			"failed to unmarshal response body: %w", err,
-		)
-	}
-
 	return posts, nil
 }
 
 func (pc *PostClient) GetPostByID(ctx context.Context, id int) (
 	post Post, err error) {
-	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	resp, err := pc.Client.R().
+		SetContext(ctx).
+		SetResult(&post).
+		Get(fmt.Sprintf("/posts/%d", id))
 	if err != nil {
-		return post, fmt.Errorf(
-			"failed to create request to %s: %w", url, err)
+		return post, fmt.Errorf("failed to make GET request: %w", err)
 	}
-
-	resp, err := pc.Client.Do(req)
-	if err != nil {
-		return post, fmt.Errorf(
-			"failed to make GET request to %s: %w", url, err)
+	if resp.IsError() {
+		return post, fmt.Errorf("error response: %s", resp.Status())
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return post, fmt.Errorf(
-			"failed to read response body: %w", err)
-	}
-	if err := json.Unmarshal(body, &post); err != nil {
-		return post, fmt.Errorf(
-			"failed to unmarshal response body: %w", err)
-	}
-
 	return post, nil
 }
 
 func (pc *PostClient) CreatePost(ctx context.Context, post Post) (
 	bool, error) {
-	url := pc.BaseURL.String() + "/posts"
-	postData, err := json.Marshal(post)
+	resp, err := pc.Client.R().
+		SetContext(ctx).
+		SetBody(post).
+		Post("/posts")
 	if err != nil {
-		return false, fmt.Errorf(
-			"error serializing post to JSON: %w", err)
+		return false, fmt.Errorf("error sending POST request: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, io.NopCloser(bytes.NewBuffer(postData)))
-	if err != nil {
-		return false, fmt.Errorf(
-			"error creating request to %s: %w", url, err)
+	if resp.IsError() {
+		return false, fmt.Errorf("error response: %s", resp.Status())
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := pc.Client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf(
-			"error sending POST request to %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf(
-			"error reading response from server: %w", err)
-	}
-
-	var createdPost Post
-	if err := json.Unmarshal(body, &createdPost); err != nil {
-		return false, fmt.Errorf(
-			"error deserializing response into Post struct: %w", err,
-		)
-	}
-
 	return true, nil
 }
 
 func (pc *PostClient) UpdatePost(ctx context.Context, id int,
 	post Post) (bool, error) {
-	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
-	postData, err := json.Marshal(post)
+	resp, err := pc.Client.R().
+		SetContext(ctx).
+		SetBody(post).
+		Put(fmt.Sprintf("/posts/%d", id))
 	if err != nil {
-		return false, fmt.Errorf(
-			"error serializing post to JSON: %w", err)
+		return false, fmt.Errorf("error sending PUT request: %w", err)
 	}
-
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, url,
-		io.NopCloser(bytes.NewBuffer(postData)))
-	if err != nil {
-		return false, fmt.Errorf(
-			"error creating PUT request for post ID %d: %w",
-			id, err)
+	if resp.IsError() {
+		return false, fmt.Errorf("error response: %s", resp.Status())
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := pc.Client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf(
-			"error sending PUT request to %s: %w",
-			req.URL, err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf(
-			"error reading response from server for post ID %d: %w",
-			id, err)
-	}
-
-	var updatedPost Post
-	if err := json.Unmarshal(body, &updatedPost); err != nil {
-		return false, fmt.Errorf(
-			"error deserializing response into Post struct for post ID %d: %w",
-			id, err)
-	}
-
 	return true, nil
 }
 
 func (pc *PostClient) DeletePost(ctx context.Context, id int) error {
-	url := pc.BaseURL.String() + "/posts/" + strconv.Itoa(id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	resp, err := pc.Client.R().
+		SetContext(ctx).
+		Delete(fmt.Sprintf("/posts/%d", id))
 	if err != nil {
-		return fmt.Errorf("error creating DELETE request for post ID %d: %w",
-			id, err)
+		return fmt.Errorf("error sending DELETE request: %w", err)
 	}
-
-	resp, err := pc.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error sending DELETE request to %s: %w",
-			url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete post with ID %d: %s",
-			id, resp.Status)
+	if resp.IsError() {
+		return fmt.Errorf("failed to delete post with ID %d: %s", id, resp.Status())
 	}
 	return nil
 }

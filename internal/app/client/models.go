@@ -1,8 +1,9 @@
 package client
 
 import (
-	"net/http"
 	"net/url"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type Post struct {
@@ -13,7 +14,6 @@ type Post struct {
 }
 
 type PostClient struct {
-	BaseURL  *url.URL
-	Client   *http.Client
-	ProxyURL *url.URL
+	BaseURL *url.URL
+	Client  *resty.Client
 }
